@@ -13,11 +13,16 @@ class StoreGUI:
     def __init__(self, parent):
         """Create GUI elements"""
         self.products: list[Product] = []
+        self.product_names: list[str] = []
+        self.selected_product = tk.StringVar()
+        self.selected_product.set("--Choose an option--")
+        self.sell_or_restock = tk.BooleanVar()
+        self.sell_or_restock.set(True)
 
         self.stock_level_frame = tk.Frame(parent)
         self.sell_restock_frame = tk.Frame(parent)
         self.create_product_frame = tk.Frame(parent)
-        self.stock_level_frame.pack()
+        self.sell_restock_frame.pack()
 
         self.create_to_stock_button = tk.Button(self.create_product_frame, text="Stocks")
         self.create_to_restock_button = tk.Button(self.create_product_frame, text="Sell & Restock")
@@ -36,10 +41,27 @@ class StoreGUI:
         self.confirm_product_button = tk.Button(self.create_product_frame, text="Confirm")
         self.confirm_product_button.grid(row=3, column=0, columnspan=2)
 
-        self.stock_to_restock_button = tk.Button(self.stock_level_frame, text="Restock")
+        self.stock_to_restock_button = tk.Button(self.stock_level_frame, text="Sell & Restock")
         self.stock_to_create_button = tk.Button(self.stock_level_frame, text="Create product")
         self.stock_to_restock_button.grid(row=0, column=0)
         self.stock_to_create_button.grid(row=0, column=1)
+
+        self.restock_to_stock_button = tk.Button(self.sell_restock_frame, text="Stocks")
+        self.restock_to_create_button = tk.Button(self.sell_restock_frame, text="Create Product")
+        self.restock_to_stock_button.grid(row=0, column=0, columnspan=2)
+        self.restock_to_create_button.grid(row=0, column=2, columnspan=2)
+        
+        self.sell_radiobutton = tk.Radiobutton(self.sell_restock_frame, text="Sell ", variable=self.sell_or_restock, value=True)
+        self.restock_radiobutton = tk.Radiobutton(self.sell_restock_frame, text="Restock ", variable=self.sell_or_restock, value=False)
+        self.sell_num_entry = tk.Entry(self.sell_restock_frame)
+        self.of_label = tk.Label(self.sell_restock_frame, text=" of ")
+        self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, "--Choose an option--", *self.product_names)
+        self.sell_radiobutton.grid(row=1, column=0)
+        self.restock_radiobutton.grid(row=2, column=0)
+        self.sell_num_entry.grid(row=1, column=1, rowspan=2)
+        self.of_label.grid(row=1, column=2, rowspan=2)
+        self.sell_of_dropdown.grid(row=1, column=3, rowspan=2)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
