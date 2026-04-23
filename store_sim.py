@@ -5,7 +5,7 @@ class Product:
     def __init__(self, name: str, base_price: int):
         self.name = name
         self.base_price = base_price
-        self.stock = 0
+        self.stock = 1
 
 class StoreGUI:
     """Create and display program GUI"""
@@ -24,7 +24,7 @@ class StoreGUI:
         self.create_product_frame = tk.Frame(parent)
         self.nav_bar = tk.Frame(parent)
         self.nav_bar.grid(row=0, column=0)
-        self.sell_restock_frame.grid(row=1, column=0)
+        self.create_product_frame.grid(row=1, column=0)
 
         self.to_stock_button = tk.Button(self.nav_bar, text="Stocks", command=self.move_to_stock)
         self.to_restock_button = tk.Button(self.nav_bar, text="Sell & Restock", command=self.move_to_sell_restock)
@@ -45,6 +45,9 @@ class StoreGUI:
         self.confirm_product_button = tk.Button(self.create_product_frame, text="Confirm", command=lambda: self.create_product(self.product_name_entry.get(), int(self.base_price_entry.get())))
         self.confirm_product_button.grid(row=2, column=0, columnspan=2)
         
+        self.stock_levels_label = tk.Label(self.stock_level_frame, text="")
+        self.stock_levels_label.grid(row=0, column=0)
+
         self.sell_radiobutton = tk.Radiobutton(self.sell_restock_frame, text="Sell ", variable=self.sell_or_restock, value=True)
         self.restock_radiobutton = tk.Radiobutton(self.sell_restock_frame, text="Restock ", variable=self.sell_or_restock, value=False)
         self.sell_num_entry = tk.Entry(self.sell_restock_frame)
@@ -66,6 +69,11 @@ class StoreGUI:
         """Change to stock level screen"""
         self.reset_screen()
         self.stock_level_frame.grid(row=1, column=0)
+        label_str = ""
+        for product in self.products:
+            label_str += f"{product.name}: {product.stock}\n"
+        self.stock_levels_label.configure(text=label_str)
+
     
     def move_to_sell_restock(self):
         """Change to sell & restock level screen"""
@@ -84,8 +92,6 @@ class StoreGUI:
         """Create a new product"""
         self.products.append(Product(product_name, price))
         self.product_names.append(product_name)
-        print("created")
-        print(self.product_names[-1])
 
 
 if __name__ == "__main__":
