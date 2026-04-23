@@ -22,12 +22,16 @@ class StoreGUI:
         self.stock_level_frame = tk.Frame(parent)
         self.sell_restock_frame = tk.Frame(parent)
         self.create_product_frame = tk.Frame(parent)
-        self.sell_restock_frame.pack()
+        self.nav_bar = tk.Frame(parent)
+        self.nav_bar.grid(row=0, column=0)
+        self.sell_restock_frame.grid(row=1, column=0)
 
-        self.create_to_stock_button = tk.Button(self.create_product_frame, text="Stocks")
-        self.create_to_restock_button = tk.Button(self.create_product_frame, text="Sell & Restock")
-        self.create_to_stock_button.grid(row=0, column=0)
-        self.create_to_restock_button.grid(row=0, column=1)
+        self.to_stock_button = tk.Button(self.nav_bar, text="Stocks")
+        self.to_restock_button = tk.Button(self.nav_bar, text="Sell & Restock")
+        self.to_create_button = tk.Button(self.nav_bar, text="Create product")
+        self.to_stock_button.grid(row=0, column=0)
+        self.to_restock_button.grid(row=0, column=1)
+        self.to_create_button.grid(row=0, column=2)
 
         self.product_name_label = tk.Label(self.create_product_frame, text="Name")
         self.product_name_entry = tk.Entry(self.create_product_frame)
@@ -42,9 +46,7 @@ class StoreGUI:
         self.confirm_product_button.grid(row=3, column=0, columnspan=2)
 
         self.stock_to_restock_button = tk.Button(self.stock_level_frame, text="Sell & Restock")
-        self.stock_to_create_button = tk.Button(self.stock_level_frame, text="Create product")
-        self.stock_to_restock_button.grid(row=0, column=0)
-        self.stock_to_create_button.grid(row=0, column=1)
+        
 
         self.restock_to_stock_button = tk.Button(self.sell_restock_frame, text="Stocks")
         self.restock_to_create_button = tk.Button(self.sell_restock_frame, text="Create Product")
