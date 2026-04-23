@@ -42,7 +42,7 @@ class StoreGUI:
         self.base_price_label.grid(row=1, column=0)
         self.base_price_entry.grid(row=1, column=1)
 
-        self.confirm_product_button = tk.Button(self.create_product_frame, text="Confirm")
+        self.confirm_product_button = tk.Button(self.create_product_frame, text="Confirm", command=lambda: self.create_product(self.product_name_entry.get(), int(self.base_price_entry.get())))
         self.confirm_product_button.grid(row=2, column=0, columnspan=2)
         
         self.sell_radiobutton = tk.Radiobutton(self.sell_restock_frame, text="Sell ", variable=self.sell_or_restock, value=True)
@@ -71,11 +71,21 @@ class StoreGUI:
         """Change to sell & restock level screen"""
         self.reset_screen()
         self.sell_restock_frame.grid(row=1, column=0)
+        self.sell_of_dropdown.destroy()
+        self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, *self.product_names)
+        self.sell_of_dropdown.grid(row=0, column=3, rowspan=2)
     
     def move_to_create(self):
         """Change to product creation screen"""
         self.reset_screen()
         self.create_product_frame.grid(row=1, column=0)
+    
+    def create_product(self, product_name: str, price: int):
+        """Create a new product"""
+        self.products.append(Product(product_name, price))
+        self.product_names.append(product_name)
+        print("created")
+        print(self.product_names[-1])
 
 
 if __name__ == "__main__":
