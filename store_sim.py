@@ -71,20 +71,26 @@ class StoreGUI:
 
     def move_to_stock(self):
         """Change to stock level screen"""
-        self.reset_screen()
-        self.stock_level_frame.grid(row=1, column=0)
-        label_str = ""
-        for product in self.products:
-            label_str += f"{product.name}: {product.stock}\n"
-        self.stock_levels_label.configure(text=label_str)
+        if len(self.products) > 0:
+            self.reset_screen()
+            self.stock_level_frame.grid(row=1, column=0)
+            label_str = ""
+            for product in self.products:
+                label_str += f"{product.name}: {product.stock}\n"
+            self.stock_levels_label.configure(text=label_str)
+        else:
+            messagebox.showerror(title="No Products", message="Please create your first product")
     
     def move_to_sell_restock(self):
         """Change to sell & restock level screen"""
-        self.reset_screen()
-        self.sell_restock_frame.grid(row=1, column=0)
-        self.sell_of_dropdown.destroy()
-        self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, *self.product_names)
-        self.sell_of_dropdown.grid(row=0, column=3, rowspan=2)
+        if len(self.products) > 0:
+            self.reset_screen()
+            self.sell_restock_frame.grid(row=1, column=0)
+            self.sell_of_dropdown.destroy()
+            self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, *self.product_names)
+            self.sell_of_dropdown.grid(row=0, column=3, rowspan=2)
+        else:
+            messagebox.showerror(title="No Products", message="Please create your first product")
     
     def move_to_create(self):
         """Change to product creation screen"""
@@ -93,35 +99,40 @@ class StoreGUI:
     
     def create_product(self, product_name: str, price: str):
         """Create a new product"""
-        can_int = int_validation("Please enter a valid price", price)
-        if can_int:
-            if len(product_name) >= 3:
+        if len(product_name.strip()) >= 3:
+            can_int = int_validation("Please enter a valid price", price)
+            if can_int:
                 self.products.append(Product(product_name, int(price)))
                 self.product_names.append(product_name)
                 self.product_name_entry.delete(0, tk.END)
                 self.base_price_entry.delete(0, tk.END)
                 self.product_name_entry.focus()
             else:
-                messagebox.showerror(title="Invalid Name", message="Product names must be at least 3 characters")
+                self.base_price_entry.delete(0, tk.END)
+                self.base_price_entry.focus()
         else:
-            self.base_price_entry.delete(0, tk.END)
-            self.base_price_entry.focus()
+            messagebox.showerror(title="Invalid Name", message="Product names must be at least 3 non-space characters")
+            self.product_name_entry.delete(0, tk.END)
+            self.product_name_entry.focus()
     
     def sell_restock(self, amount: str, product_name: str, is_selling: int):
         can_int = int_validation("Please enter a valid amount", amount)
         if can_int:
-            selling_product = Product("", 0)
-            for product in self.products:
-                if product.name == product_name:
-                    selling_product = product
-
-            if selling_product.stock + (int(amount) * is_selling) >= 0:
-                selling_product.stock += int(amount) * is_selling
+            if product_name == "--Choose an option--":
+                messagebox.showerror(title="No Product Selected", message="Please select a product")
             else:
-                messagebox.showerror(title="No Stock", message=f"You do not have {amount} of {product_name}")
-            
-            self.sell_num_entry.delete(0, tk.END)
-            self.sell_num_entry.focus()
+                selling_product = Product("", 0)
+                for product in self.products:
+                    if product.name == product_name:
+                        selling_product = product
+
+                if selling_product.stock + (int(amount) * is_selling) >= 0:
+                    selling_product.stock += int(amount) * is_selling
+                else:
+                    messagebox.showerror(title="No Stock", message=f"You do not have {amount} of {product_name}")
+                
+                self.sell_num_entry.delete(0, tk.END)
+                self.sell_num_entry.focus()
         else:
             self.sell_num_entry.delete(0, tk.END)
             self.sell_num_entry.focus()
