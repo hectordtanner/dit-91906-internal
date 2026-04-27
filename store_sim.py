@@ -7,7 +7,8 @@ class Product:
         """Add the product's data to the object"""
         self.name = name
         self.base_price = base_price
-        self.stock = 1
+        self.stock = 0
+        self.total_sold = 0
 
 class StoreGUI:
     """Create and display program GUI"""
@@ -20,6 +21,7 @@ class StoreGUI:
         self.selected_product.set("--Choose an option--")
         self.sell_or_restock = tk.IntVar()
         self.sell_or_restock.set(-1)
+        self.total_sales = 0
 
         self.stock_level_frame = tk.Frame(parent)
         self.sell_restock_frame = tk.Frame(parent)
@@ -47,8 +49,12 @@ class StoreGUI:
         self.confirm_product_button = tk.Button(self.create_product_frame, text="Confirm", command=lambda: self.create_product(self.product_name_entry.get(), self.base_price_entry.get()))
         self.confirm_product_button.grid(row=2, column=0, columnspan=2)
         
+        self.low_stock_warning_label = tk.Label(self.stock_level_frame, text="")
         self.stock_levels_label = tk.Label(self.stock_level_frame, text="")
-        self.stock_levels_label.grid(row=0, column=0)
+        self.total_sales_label = tk.Label(self.stock_level_frame, text="")
+        self.low_stock_warning_label.grid(row=0, column=0)
+        self.stock_levels_label.grid(row=1, column=0)
+        self.total_sales_label.grid(row=2, column=0)
 
         self.sell_radiobutton = tk.Radiobutton(self.sell_restock_frame, text="Sell ", variable=self.sell_or_restock, value=-1)
         self.restock_radiobutton = tk.Radiobutton(self.sell_restock_frame, text="Restock ", variable=self.sell_or_restock, value=1)
@@ -74,10 +80,15 @@ class StoreGUI:
         if len(self.products) > 0:
             self.reset_screen()
             self.stock_level_frame.grid(row=1, column=0)
-            label_str = ""
+            stock_label_str = ""
+            warning_label_str = ""
             for product in self.products:
-                label_str += f"{product.name}: {product.stock}\n"
-            self.stock_levels_label.configure(text=label_str)
+                stock_label_str += f"{product.name}: {product.stock}. Total sold: {product.total_sold}\n"
+                if product.stock < 10:
+                    warning_label_str += f"WARNING: {product.name} has low stock ({product.stock})\n"
+            self.low_stock_warning_label.configure(text=warning_label_str)
+            self.stock_levels_label.configure(text=stock_label_str)
+            self.total_sales_label.configure(text=f"Total Sales: {self.total_sales}")
         else:
             messagebox.showerror(title="No Products", message="Please create your first product")
     
@@ -128,6 +139,9 @@ class StoreGUI:
 
                 if selling_product.stock + (int(amount) * is_selling) >= 0:
                     selling_product.stock += int(amount) * is_selling
+                    if is_selling == -1:
+                        selling_product.total_sold += int(amount)
+                        self.total_sales += int(amount)
                 else:
                     messagebox.showerror(title="No Stock", message=f"You do not have {amount} of {product_name}")
                 
