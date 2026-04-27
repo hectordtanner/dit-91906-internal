@@ -95,11 +95,14 @@ class StoreGUI:
         """Create a new product"""
         can_int = int_validation("Please enter a valid price", price)
         if can_int:
-            self.products.append(Product(product_name, int(price)))
-            self.product_names.append(product_name)
-            self.product_name_entry.delete(0, tk.END)
-            self.base_price_entry.delete(0, tk.END)
-            self.product_name_entry.focus()
+            if len(product_name) >= 3:
+                self.products.append(Product(product_name, int(price)))
+                self.product_names.append(product_name)
+                self.product_name_entry.delete(0, tk.END)
+                self.base_price_entry.delete(0, tk.END)
+                self.product_name_entry.focus()
+            else:
+                messagebox.showerror(title="Invalid Name", message="Product names must be at least 3 characters")
         else:
             self.base_price_entry.delete(0, tk.END)
             self.base_price_entry.focus()
@@ -111,7 +114,12 @@ class StoreGUI:
             for product in self.products:
                 if product.name == product_name:
                     selling_product = product
-            selling_product.stock += int(amount) * is_selling
+
+            if selling_product.stock + (int(amount) * is_selling) >= 0:
+                selling_product.stock += int(amount) * is_selling
+            else:
+                messagebox.showerror(title="No Stock", message=f"You do not have {amount} of {product_name}")
+            
             self.sell_num_entry.delete(0, tk.END)
             self.sell_num_entry.focus()
         else:
