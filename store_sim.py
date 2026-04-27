@@ -127,6 +127,7 @@ class StoreGUI:
             self.product_name_entry.focus()
     
     def sell_restock(self, amount: str, product_name: str, is_selling: int):
+        """Sell and restock products"""
         can_int = int_validation("Please enter a valid amount", amount)
         if can_int:
             if product_name == "--Choose an option--":
@@ -152,6 +153,7 @@ class StoreGUI:
             self.sell_num_entry.focus()
     
 def int_validation(error_text: str, value):
+    """Return True if value is able to be turned into an int, False if not"""
     try:
         value = int(value)
         return True
