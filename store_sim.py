@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 DEFAULT_PROFIT_MARGIN = 1.2
-STARTING_MONEY = 110000000
+STARTING_MONEY = 1100
 PRODUCT_CREATION_PRICE = 1000
 STOCK_WARNING_LEVEL = 10
 
@@ -25,44 +25,50 @@ class StoreGUI:
         self.product_names: list[str] = []
         self.selected_product = tk.StringVar()
         self.selected_product.set("--Choose an option--")
+        self.selected_save = tk.StringVar()
+        self.selected_save.set("--Choose an option--")
         self.sell_or_restock = tk.BooleanVar()
         self.sell_or_restock.set(True)
         self.total_sales = 0
         self.money = STARTING_MONEY
+        self.saves: list[str] = ["save_1.txt", "save_2.txt", "save_3.txt", "save_4.txt"]
 
         self.stock_level_frame = tk.Frame(parent)
         self.sell_restock_frame = tk.Frame(parent)
         self.create_product_frame = tk.Frame(parent)
-        
+        self.saves_frame = tk.Frame(parent)
         self.nav_bar = tk.Frame(parent)
+
         self.nav_bar.grid(row=0, column=0)
         self.create_product_frame.grid(row=1, column=0)
 
         self.to_stock_button = tk.Button(self.nav_bar, text="Stocks", command=self.move_to_stock)
         self.to_restock_button = tk.Button(self.nav_bar, text="Sell & Restock", command=self.move_to_sell_restock)
         self.to_create_button = tk.Button(self.nav_bar, text="Create product", command=self.move_to_create)
-        
+        self.to_saves_button = tk.Button(self.nav_bar, text="Saves", command=self.move_to_saves)
+
         self.to_stock_button.grid(row=0, column=0)
         self.to_restock_button.grid(row=0, column=1)
         self.to_create_button.grid(row=0, column=2)
+        self.to_saves_button.grid(row=0, column=3)
 
         self.product_name_label = tk.Label(self.create_product_frame, text="Name")
         self.product_name_entry = tk.Entry(self.create_product_frame)
         self.base_price_label = tk.Label(self.create_product_frame, text="Base Price:")
         self.base_price_entry = tk.Entry(self.create_product_frame)
-        self.confirm_product_button = tk.Button(self.create_product_frame, text="Confirm ($1000)", command=lambda: self.create_product(self.product_name_entry.get(), self.base_price_entry.get()))
-        
+        self.confirm_product_button = tk.Button(self.create_product_frame, text=f"Confirm (${PRODUCT_CREATION_PRICE})", command=lambda: self.create_product(self.product_name_entry.get(), self.base_price_entry.get()))
+
         self.product_name_label.grid(row=0, column=0)
         self.product_name_entry.grid(row=0, column=1)
         self.base_price_label.grid(row=1, column=0)
         self.base_price_entry.grid(row=1, column=1)
         self.confirm_product_button.grid(row=2, column=0, columnspan=2)
-        
+
         self.money_label = tk.Label(self.stock_level_frame, text="")
         self.low_stock_warning_label = tk.Label(self.stock_level_frame, text="")
         self.stock_levels_label = tk.Label(self.stock_level_frame, text="")
         self.total_sales_label = tk.Label(self.stock_level_frame, text="")
-        
+
         self.money_label.grid(row=0, column=0)
         self.low_stock_warning_label.grid(row=1, column=0)
         self.stock_levels_label.grid(row=2, column=0)
@@ -75,7 +81,7 @@ class StoreGUI:
         self.of_label = tk.Label(self.sell_restock_frame, text=" of ")
         self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, "--Choose an option--", *self.product_names, command=self.update_profit_label)
         self.confirm_sell_button = tk.Button(self.sell_restock_frame, text="Confirm (for $X)", command=lambda: self.sell_restock(self.sell_num_entry.get(), self.selected_product.get(), self.sell_or_restock.get()))
-        
+
         self.sell_radiobutton.grid(row=0, column=0)
         self.restock_radiobutton.grid(row=1, column=0)
         self.sell_num_entry.grid(row=0, column=1, rowspan=2)
@@ -83,11 +89,24 @@ class StoreGUI:
         self.sell_of_dropdown.grid(row=0, column=3, rowspan=2)
         self.confirm_sell_button.grid(row=2, column=0, columnspan=4)
 
+        self.save_select_label = tk.Label(self.saves_frame, text="Save: ")
+        self.save_select = tk.OptionMenu(self.saves_frame, self.selected_save, "--Choose an option--", *self.saves)
+        self.save_load_button = tk.Button(self.saves_frame, text="Load")
+        self.save_overwrite_button = tk.Button(self.saves_frame, text="Overwrite")
+        
+        self.save_select_label.grid(row=0, column=0)
+        self.save_select.grid(row=0, column=1)
+        self.save_load_button.grid(row=1, column=0)
+        self.save_overwrite_button.grid(row=1, column=1)
+        
+        messagebox.showinfo(title="Welcome!", message="Create your first product to begin")
+
     def reset_screen(self):
         """Reset display by using grid_forget on all frames"""
         self.stock_level_frame.grid_forget()
         self.sell_restock_frame.grid_forget()
         self.create_product_frame.grid_forget()
+        self.saves_frame.grid_forget()
 
     def move_to_stock(self):
         """Change to and update the stock level screen, and checks that a product exists."""
@@ -120,9 +139,14 @@ class StoreGUI:
             messagebox.showerror(title="No Products", message="Please create your first product")
 
     def move_to_create(self):
-        """Change to product creation screen, and checks that a product exists.."""
+        """Change to product creation screen"""
         self.reset_screen()
         self.create_product_frame.grid(row=1, column=0)
+    
+    def move_to_saves(self):
+        """Change to save file screen"""
+        self.reset_screen()
+        self.saves_frame.grid(row=1, column=0)
 
     def create_product(self, product_name: str, price: str):
         """Create a new product."""
@@ -178,7 +202,6 @@ class StoreGUI:
     
     def update_profit_label(self, arb):
         """Update the profit label, with an arbitrary parameter as some tkinter widgets require commands to have exaclty one parameter"""
-        print("a")
         displayed_product = self.identify_product(self.selected_product.get())
         amount = self.sell_num_entry.get()
 
