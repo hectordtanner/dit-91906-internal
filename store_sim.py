@@ -15,6 +15,9 @@ class Product:
         self.stock = 0
         self.total_sold = 0
         self.profit_margin = DEFAULT_PROFIT_MARGIN
+    
+    def save_file_str(self):
+        return f"{self.name}|{self.base_price}|{self.stock}|{self.total_sold}|{self.profit_margin}"
 
 class StoreGUI:
     """Create and display program GUI."""
@@ -26,7 +29,7 @@ class StoreGUI:
         self.selected_product = tk.StringVar()
         self.selected_product.set("--Choose an option--")
         self.selected_save = tk.StringVar()
-        self.selected_save.set("--Choose an option--")
+        self.selected_save.set("save_1.txt")
         self.sell_or_restock = tk.BooleanVar()
         self.sell_or_restock.set(True)
         self.total_sales = 0
@@ -90,9 +93,9 @@ class StoreGUI:
         self.confirm_sell_button.grid(row=2, column=0, columnspan=4)
 
         self.save_select_label = tk.Label(self.saves_frame, text="Save: ")
-        self.save_select = tk.OptionMenu(self.saves_frame, self.selected_save, "--Choose an option--", *self.saves)
-        self.save_load_button = tk.Button(self.saves_frame, text="Load")
-        self.save_overwrite_button = tk.Button(self.saves_frame, text="Overwrite")
+        self.save_select = tk.OptionMenu(self.saves_frame, self.selected_save, *self.saves)
+        self.save_load_button = tk.Button(self.saves_frame, text="Load", command=lambda: self.load_save(self.selected_save.get()))
+        self.save_overwrite_button = tk.Button(self.saves_frame, text="Overwrite", command=lambda: self.overwrite_save(self.selected_save.get()))
         
         self.save_select_label.grid(row=0, column=0)
         self.save_select.grid(row=0, column=1)
@@ -206,7 +209,6 @@ class StoreGUI:
         amount = self.sell_num_entry.get()
 
         if int_validation("", False, amount):
-            
             if self.sell_or_restock.get():
                 sale_amount = int(amount) * displayed_product.base_price * displayed_product.profit_margin
             else:
@@ -221,6 +223,33 @@ class StoreGUI:
             if product.name == name:
                 identified_product = product
         return identified_product
+    
+    def load_save(self, save: str):
+        if messagebox.askokcancel(title="Load Save", message="Are you sure you want to load this save? It will delete the save currently open if it has not been saved"):
+            with open(save, "r") as save_file:
+                save_data = save_file.read().splitlines()
+            self.money = float(save_data[0].split("|")[0])
+            self.total_sales = int(save_data[0].split("|")[1])
+            save_data.pop(0)
+            
+            self.product_names = []
+            self.products = []
+            for product_data in save_data:
+                product_data = product_data.split("|")
+                self.product_names.append(product_data[0])
+                new_product = Product(product_data[0], int(product_data[1]))
+                new_product.stock = int(product_data[2])
+                new_product.total_sold = int(product_data[3])
+                new_product.profit_margin = float(product_data[4])
+                self.products.append(new_product)
+
+    def overwrite_save(self, save: str):
+        if messagebox.askokcancel(title="Overwrite Save", message="Are you sure you want to overwrite this save? It will delete the save currently stored there."):
+            full_save_str = f"{self.money}|{self.total_sales}"
+            for product in self.products:
+                full_save_str += "\n" + product.save_file_str()
+            with open(save, "w") as save_file:
+                save_file.write(full_save_str)
 
         
 def int_validation(error_text: str, display_error: bool, value):
