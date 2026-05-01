@@ -1,3 +1,5 @@
+"""Store simulator, with product creation, selling and restocking, money and profits, and external save files."""
+
 import tkinter as tk
 from tkinter import messagebox
 
@@ -105,7 +107,7 @@ class StoreGUI:
         messagebox.showinfo(title="Welcome!", message="Create your first product to begin")
 
     def reset_screen(self):
-        """Reset display by using grid_forget on all frames"""
+        """Reset display by using grid_forget on all frames."""
         self.stock_level_frame.grid_forget()
         self.sell_restock_frame.grid_forget()
         self.create_product_frame.grid_forget()
@@ -142,12 +144,12 @@ class StoreGUI:
             messagebox.showerror(title="No Products", message="Please create your first product")
 
     def move_to_create(self):
-        """Change to product creation screen"""
+        """Change to product creation screen."""
         self.reset_screen()
         self.create_product_frame.grid(row=1, column=0)
     
     def move_to_saves(self):
-        """Change to save file screen"""
+        """Change to save file screen."""
         self.reset_screen()
         self.saves_frame.grid(row=1, column=0)
 
@@ -214,7 +216,7 @@ class StoreGUI:
         self.update_profit_label(0)
     
     def update_profit_label(self, arb):
-        """Update the profit label, with an arbitrary parameter as some tkinter widgets require commands to have exaclty one parameter"""
+        """Update the profit label, with an arbitrary parameter as some tkinter widgets require commands to have exaclty one parameter."""
         displayed_product = self.identify_product(self.selected_product.get())
         amount = self.sell_num_entry.get()
 
@@ -228,6 +230,7 @@ class StoreGUI:
             self.confirm_sell_button.configure(text=f"Confirm")
 
     def identify_product(self, name: str):
+        """Identify and return the product in self.products with a specified name, returning an empty product if it does not exist."""
         identified_product = Product("", 0)
         for product in self.products:
             if product.name == name:
@@ -235,6 +238,7 @@ class StoreGUI:
         return identified_product
     
     def load_save(self, save: str):
+        """Load an external save file from a specified file in the save_files folder."""
         if messagebox.askokcancel(title="Load Save", message="Are you sure you want to load this save? It will delete the save currently open if it has not been saved"):
             try:
                 try:
@@ -261,6 +265,7 @@ class StoreGUI:
                 messagebox.showerror(title="Save Error", message="File does not exist.")
 
     def overwrite_save(self, save: str):
+        """Overwrite an external save file from a specified file in the save_files folder."""
         if messagebox.askokcancel(title="Overwrite Save", message="Are you sure you want to overwrite this save? It will delete the save currently stored there."):
             full_save_str = f"{self.money}|{self.total_sales}"
             for product in self.products:
