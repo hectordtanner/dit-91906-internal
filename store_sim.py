@@ -154,22 +154,32 @@ class StoreGUI:
     def create_product(self, product_name: str, price: str):
         """Create a new product."""
         if len(product_name.strip()) >= 3:
-            can_int = int_validation("Please enter a valid price", True, price)
-            if can_int:
-                if self.money >= PRODUCT_CREATION_PRICE:
-                    self.products.append(Product(product_name, int(price)))
-                    self.product_names.append(product_name)
-                    self.product_name_entry.delete(0, tk.END)
-                    self.base_price_entry.delete(0, tk.END)
-                    self.product_name_entry.focus()
-                    self.money -= PRODUCT_CREATION_PRICE
+            if not ("|" in product_name or "\n" in product_name):
+                if not (product_name.strip() in self.product_names):
+                    can_int = int_validation("Please enter a valid price", True, price)
+                    if can_int:
+                        if self.money >= PRODUCT_CREATION_PRICE:
+                            self.products.append(Product(product_name, int(price)))
+                            self.product_names.append(product_name)
+                            self.product_name_entry.delete(0, tk.END)
+                            self.base_price_entry.delete(0, tk.END)
+                            self.product_name_entry.focus()
+                            self.money -= PRODUCT_CREATION_PRICE
+                        else:
+                            messagebox.showerror(title="No Money", message="You do not have enough money")
+                    else:
+                        self.base_price_entry.delete(0, tk.END)
+                        self.base_price_entry.focus()
                 else:
-                    messagebox.showerror(title="No Money", message="You do not have enough money")
+                    messagebox.showerror(title="Invalid Name", message="Product name already exists")
+                    self.product_name_entry.delete(0, tk.END)
+                    self.product_name_entry.focus()
             else:
-                self.base_price_entry.delete(0, tk.END)
-                self.base_price_entry.focus()
+                messagebox.showerror(title="Invalid Name", message="Product names cannot contain '|'")
+                self.product_name_entry.delete(0, tk.END)
+                self.product_name_entry.focus()
         else:
-            messagebox.showerror(title="Invalid Name", message="Product names must be at least 3 non-space characters")
+            messagebox.showerror(title="Invalid Name", message="Product names must be at least 3 characters")
             self.product_name_entry.delete(0, tk.END)
             self.product_name_entry.focus()
 
@@ -227,22 +237,26 @@ class StoreGUI:
     def load_save(self, save: str):
         if messagebox.askokcancel(title="Load Save", message="Are you sure you want to load this save? It will delete the save currently open if it has not been saved"):
             try:
-                with open("save_files/" + save, "r") as save_file:
-                    save_data = save_file.read().splitlines()
-                self.money = float(save_data[0].split("|")[0])
-                self.total_sales = int(save_data[0].split("|")[1])
-                save_data.pop(0)
-            
-                self.product_names = []
-                self.products = []
-                for product_data in save_data:
-                    product_data = product_data.split("|")
-                    self.product_names.append(product_data[0])
-                    new_product = Product(product_data[0], int(product_data[1]))
-                    new_product.stock = int(product_data[2])
-                    new_product.total_sold = int(product_data[3])
-                    new_product.profit_margin = float(product_data[4])
-                    self.products.append(new_product)
+                try:
+                    with open("save_files/" + save, "r") as save_file:
+                        save_data = save_file.read().splitlines()
+                    self.money = float(save_data[0].split("|")[0])
+                    self.total_sales = int(save_data[0].split("|")[1])
+                    save_data.pop(0)
+                
+                    self.product_names = []
+                    self.products = []
+                    for product_data in save_data:
+                        product_data = product_data.split("|")
+                        self.product_names.append(product_data[0])
+                        new_product = Product(product_data[0], int(product_data[1]))
+                        new_product.stock = int(product_data[2])
+                        new_product.total_sold = int(product_data[3])
+                        new_product.profit_margin = float(product_data[4])
+                        self.products.append(new_product)
+                except ValueError:
+                    messagebox.showerror(title="Save Error", message="File corrupted")
+
             except FileNotFoundError:
                 messagebox.showerror(title="Save Error", message="File does not exist.")
 
@@ -255,6 +269,7 @@ class StoreGUI:
             try:           
                 with open("save_files/" + save, "w") as save_file:
                     save_file.write(full_save_str)
+                    
             except FileNotFoundError:
                 messagebox.showerror(title="Save Error", message="File does not exist.")
 
@@ -264,6 +279,7 @@ def int_validation(error_text: str, display_error: bool, value):
     try:
         value = int(value)
         return True
+    
     except ValueError:
         if display_error:
             messagebox.showerror(title="Invalid Value", message=error_text) 
