@@ -226,30 +226,37 @@ class StoreGUI:
     
     def load_save(self, save: str):
         if messagebox.askokcancel(title="Load Save", message="Are you sure you want to load this save? It will delete the save currently open if it has not been saved"):
-            with open(save, "r") as save_file:
-                save_data = save_file.read().splitlines()
-            self.money = float(save_data[0].split("|")[0])
-            self.total_sales = int(save_data[0].split("|")[1])
-            save_data.pop(0)
+            try:
+                with open("save_files/" + save, "r") as save_file:
+                    save_data = save_file.read().splitlines()
+                self.money = float(save_data[0].split("|")[0])
+                self.total_sales = int(save_data[0].split("|")[1])
+                save_data.pop(0)
             
-            self.product_names = []
-            self.products = []
-            for product_data in save_data:
-                product_data = product_data.split("|")
-                self.product_names.append(product_data[0])
-                new_product = Product(product_data[0], int(product_data[1]))
-                new_product.stock = int(product_data[2])
-                new_product.total_sold = int(product_data[3])
-                new_product.profit_margin = float(product_data[4])
-                self.products.append(new_product)
+                self.product_names = []
+                self.products = []
+                for product_data in save_data:
+                    product_data = product_data.split("|")
+                    self.product_names.append(product_data[0])
+                    new_product = Product(product_data[0], int(product_data[1]))
+                    new_product.stock = int(product_data[2])
+                    new_product.total_sold = int(product_data[3])
+                    new_product.profit_margin = float(product_data[4])
+                    self.products.append(new_product)
+            except FileNotFoundError:
+                messagebox.showerror(title="Save Error", message="File does not exist.")
 
     def overwrite_save(self, save: str):
         if messagebox.askokcancel(title="Overwrite Save", message="Are you sure you want to overwrite this save? It will delete the save currently stored there."):
             full_save_str = f"{self.money}|{self.total_sales}"
             for product in self.products:
                 full_save_str += "\n" + product.save_file_str()
-            with open(save, "w") as save_file:
-                save_file.write(full_save_str)
+            
+            try:           
+                with open("save_files/" + save, "w") as save_file:
+                    save_file.write(full_save_str)
+            except FileNotFoundError:
+                messagebox.showerror(title="Save Error", message="File does not exist.")
 
         
 def int_validation(error_text: str, display_error: bool, value):
