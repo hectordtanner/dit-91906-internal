@@ -7,6 +7,7 @@ DEFAULT_PROFIT_MARGIN = 1.2
 STARTING_MONEY = 1100
 PRODUCT_CREATION_PRICE = 1000
 STOCK_WARNING_LEVEL = 10
+TICK_TIME = 1000
 
 class Product:
     """Store the information of a single product."""
@@ -17,6 +18,7 @@ class Product:
         self.stock = 0
         self.total_sold = 0
         self.profit_margin = DEFAULT_PROFIT_MARGIN
+        self.production = 0
     
     def save_file_str(self):
         return f"{self.name}|{self.base_price}|{self.stock}|{self.total_sold}|{self.profit_margin}"
@@ -40,22 +42,26 @@ class StoreGUI:
 
         self.stock_level_frame = tk.Frame(parent)
         self.sell_restock_frame = tk.Frame(parent)
+        self.production_frame = tk.Frame(parent)
         self.create_product_frame = tk.Frame(parent)
         self.saves_frame = tk.Frame(parent)
         self.nav_bar = tk.Frame(parent)
+        self.frames = [self.stock_level_frame, self.sell_restock_frame, self.production_frame, self.create_product_frame, self.saves_frame]
 
         self.nav_bar.grid(row=0, column=0)
         self.create_product_frame.grid(row=1, column=0)
 
-        self.to_stock_button = tk.Button(self.nav_bar, text="Stocks", command=self.move_to_stock)
-        self.to_restock_button = tk.Button(self.nav_bar, text="Sell & Restock", command=self.move_to_sell_restock)
-        self.to_create_button = tk.Button(self.nav_bar, text="Create product", command=self.move_to_create)
-        self.to_saves_button = tk.Button(self.nav_bar, text="Saves", command=self.move_to_saves)
+        self.to_stock_button = tk.Button(self.nav_bar, text="Stocks", command=lambda: self.move_to_frame(self.stock_level_frame))
+        self.to_restock_button = tk.Button(self.nav_bar, text="Sell & Restock", command=lambda: self.move_to_frame(self.sell_restock_frame))
+        self.to_production_button = tk.Button(self.nav_bar, text="Production", command=lambda: self.move_to_frame(self.production_frame))
+        self.to_create_button = tk.Button(self.nav_bar, text="Create product", command=lambda: self.move_to_frame(self.create_product_frame))
+        self.to_saves_button = tk.Button(self.nav_bar, text="Saves", command=lambda: self.move_to_frame(self.saves_frame))
 
         self.to_stock_button.grid(row=0, column=0)
         self.to_restock_button.grid(row=0, column=1)
-        self.to_create_button.grid(row=0, column=2)
-        self.to_saves_button.grid(row=0, column=3)
+        self.to_production_button.grid(row=0, column=2)
+        self.to_create_button.grid(row=0, column=3)
+        self.to_saves_button.grid(row=0, column=4)
 
         self.product_name_label = tk.Label(self.create_product_frame, text="Name")
         self.product_name_entry = tk.Entry(self.create_product_frame)
@@ -98,60 +104,48 @@ class StoreGUI:
         self.save_select = tk.OptionMenu(self.saves_frame, self.selected_save, *self.saves)
         self.save_load_button = tk.Button(self.saves_frame, text="Load", command=lambda: self.load_save(self.selected_save.get()))
         self.save_overwrite_button = tk.Button(self.saves_frame, text="Overwrite", command=lambda: self.overwrite_save(self.selected_save.get()))
-        
+
         self.save_select_label.grid(row=0, column=0)
         self.save_select.grid(row=0, column=1)
         self.save_load_button.grid(row=1, column=0)
         self.save_overwrite_button.grid(row=1, column=1)
-        
+
+        self.buy_production_label = tk.Label(self.production_frame, text="Buy ")
+        self.production_num_entry = tk.Entry(self.production_frame)
+        self.per_s_label = tk.Label(self.production_frame, text="/s production of ")
+        self.production_of_dropdown = tk.OptionMenu(self.production_frame, self.selected_product, "--Choose an option--", *self.product_names)
+        self.confirm_production_button = tk.Button(self.production_frame, text="Confirm (for $X)")
+
+        self.buy_production_label.grid(row=0, column=0)
+        self.production_num_entry.grid(row=0, column=1)
+        self.per_s_label.grid(row=0, column=2)
+        self.production_of_dropdown.grid(row=0, column=3)
+        self.confirm_production_button.grid(row=1, column=0, columnspan=4)
+
         messagebox.showinfo(title="Welcome!", message="Create your first product to begin")
 
     def reset_screen(self):
         """Reset display by using grid_forget on all frames."""
-        self.stock_level_frame.grid_forget()
-        self.sell_restock_frame.grid_forget()
-        self.create_product_frame.grid_forget()
-        self.saves_frame.grid_forget()
+        for frame in self.frames:
+            frame.grid_forget()
 
-    def move_to_stock(self):
-        """Change to and update the stock level screen, and checks that a product exists."""
+    def move_to_frame(self, frame: tk.Frame):
+        """Change to and update the specified frame, and checks that a product exists."""
         if len(self.products) > 0:
+            self.update_stock_level()
             self.reset_screen()
-            self.stock_level_frame.grid(row=1, column=0)
-            stock_label_str = ""
-            warning_label_str = ""
-            for product in self.products:
-                stock_label_str += f"{product.name}: {product.stock}. Total sold: {product.total_sold}\n"
-                if product.stock < STOCK_WARNING_LEVEL:
-                    warning_label_str += f"WARNING: {product.name} has low stock ({product.stock})\n"
-            self.money_label.configure(text=f"You have ${self.money}")
-            self.low_stock_warning_label.configure(text=warning_label_str)
-            self.stock_levels_label.configure(text=stock_label_str)
-            self.total_sales_label.configure(text=f"Total Sales: {self.total_sales}")
+            frame.grid(row=1, column=0)
+            
+            if frame == self.sell_restock_frame:
+                self.sell_of_dropdown.destroy()
+                self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, *self.product_names)
+                self.sell_of_dropdown.grid(row=0, column=3, rowspan=2)
+            if frame == self.production_frame:
+                self.production_of_dropdown.destroy()
+                self.production_of_dropdown = tk.OptionMenu(self.production_frame, self.selected_product, *self.product_names)
+                self.production_of_dropdown.grid(row=0, column=3)
         else:
             messagebox.showerror(title="No Products", message="Please create your first product")
-
-    def move_to_sell_restock(self):
-        """Change to and update the sell & restock level screen, and checks that a product exists."""
-        if len(self.products) > 0:
-            self.reset_screen()
-            self.sell_restock_frame.grid(row=1, column=0)
-            self.sell_of_dropdown.destroy()
-            self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, *self.product_names, command=self.update_profit_label)
-            self.sell_of_dropdown.grid(row=0, column=3, rowspan=2)
-            self.update_profit_label(0)
-        else:
-            messagebox.showerror(title="No Products", message="Please create your first product")
-
-    def move_to_create(self):
-        """Change to product creation screen."""
-        self.reset_screen()
-        self.create_product_frame.grid(row=1, column=0)
-    
-    def move_to_saves(self):
-        """Change to save file screen."""
-        self.reset_screen()
-        self.saves_frame.grid(row=1, column=0)
 
     def create_product(self, product_name: str, price: str):
         """Create a new product."""
@@ -213,22 +207,7 @@ class StoreGUI:
 
         self.sell_num_entry.delete(0, tk.END)
         self.sell_num_entry.focus()
-        self.update_profit_label(0)
     
-    def update_profit_label(self, arb):
-        """Update the profit label, with an arbitrary parameter as some tkinter widgets require commands to have exaclty one parameter."""
-        displayed_product = self.identify_product(self.selected_product.get())
-        amount = self.sell_num_entry.get()
-
-        if int_validation("", False, amount):
-            if self.sell_or_restock.get():
-                sale_amount = int(amount) * displayed_product.base_price * displayed_product.profit_margin
-            else:
-                sale_amount = int(amount) * displayed_product.base_price
-            self.confirm_sell_button.configure(text=f"Confirm (for ${sale_amount})")
-        else:
-            self.confirm_sell_button.configure(text=f"Confirm")
-
     def identify_product(self, name: str):
         """Identify and return the product in self.products with a specified name, returning an empty product if it does not exist."""
         identified_product = Product("", 0)
@@ -236,7 +215,7 @@ class StoreGUI:
             if product.name == name:
                 identified_product = product
         return identified_product
-    
+
     def load_save(self, save: str):
         """Load an external save file from a specified file in the save_files folder."""
         if messagebox.askokcancel(title="Load Save", message="Are you sure you want to load this save? It will delete the save currently open if it has not been saved"):
@@ -247,7 +226,7 @@ class StoreGUI:
                     self.money = float(save_data[0].split("|")[0])
                     self.total_sales = int(save_data[0].split("|")[1])
                     save_data.pop(0)
-                
+
                     self.product_names = []
                     self.products = []
                     for product_data in save_data:
@@ -270,21 +249,51 @@ class StoreGUI:
             full_save_str = f"{self.money}|{self.total_sales}"
             for product in self.products:
                 full_save_str += "\n" + product.save_file_str()
-            
-            try:           
-                with open("save_files/" + save, "w") as save_file:
-                    save_file.write(full_save_str)
-                    
-            except FileNotFoundError:
-                messagebox.showerror(title="Save Error", message="File does not exist.")
 
+            with open("save_files/" + save, "w") as save_file:
+                save_file.write(full_save_str)
         
+    def tick_update(self):
+        self.update_stock_level()
+        for product in self.products:
+            product.stock += product.production
+        root.after(TICK_TIME, self.tick_update)
+    
+    def update_stock_level(self):
+        """Update the stock level labels"""
+        stock_label_str = ""
+        warning_label_str = ""
+        for product in self.products:
+            stock_label_str += f"{product.name}: {product.stock}. Total sold: {product.total_sold}\n"
+            if product.stock < STOCK_WARNING_LEVEL:
+                warning_label_str += f"WARNING: {product.name} has low stock ({product.stock})\n"
+        self.money_label.configure(text=f"You have ${self.money}")
+        self.low_stock_warning_label.configure(text=warning_label_str)
+        self.stock_levels_label.configure(text=stock_label_str)
+        self.total_sales_label.configure(text=f"Total Sales: {self.total_sales}")
+    
+    def update_profit_label(self, arb):
+        """Update the profit label."""
+        displayed_product = self.identify_product(self.selected_product.get())
+        amount = self.sell_num_entry.get()
+
+        if int_validation("", False, amount):
+            if self.sell_or_restock.get():
+                sale_amount = int(amount) * displayed_product.base_price * displayed_product.profit_margin
+            else:
+                sale_amount = int(amount) * displayed_product.base_price
+            self.confirm_sell_button.configure(text=f"Confirm (for ${sale_amount})")
+        else:
+            self.confirm_sell_button.configure(text=f"Confirm")
+
+
+
 def int_validation(error_text: str, display_error: bool, value):
     """Return True if value is able to be turned into an int, False if not."""
     try:
         value = int(value)
         return True
-    
+
     except ValueError:
         if display_error:
             messagebox.showerror(title="Invalid Value", message=error_text) 
@@ -294,4 +303,5 @@ def int_validation(error_text: str, display_error: bool, value):
 if __name__ == "__main__":
     root = tk.Tk()
     store_gui = StoreGUI(root)
+    store_gui.tick_update()
     root.mainloop()
