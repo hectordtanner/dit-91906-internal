@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import messagebox
 
 DEFAULT_PROFIT_MARGIN = 1.2
-STARTING_MONEY = 1100
+STARTING_MONEY = 13100
 PRODUCT_CREATION_PRICE = 1000
 STOCK_WARNING_LEVEL = 10
 TICK_TIME = 1000
@@ -21,7 +21,7 @@ class Product:
         self.production = 0
     
     def save_file_str(self):
-        return f"{self.name}|{self.base_price}|{self.stock}|{self.total_sold}|{self.profit_margin}"
+        return f"{self.name}|{self.base_price}|{self.stock}|{self.total_sold}|{self.profit_margin}|{self.production}"
 
 class StoreGUI:
     """Create and display program GUI."""
@@ -91,7 +91,7 @@ class StoreGUI:
         self.sell_num_entry.bind("<KeyRelease>", self.update_profit_label)
         self.of_label = tk.Label(self.sell_restock_frame, text=" of ")
         self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, "--Choose an option--", *self.product_names, command=self.update_profit_label)
-        self.confirm_sell_button = tk.Button(self.sell_restock_frame, text="Confirm (for $X)", command=lambda: self.sell_restock(self.sell_num_entry.get(), self.selected_product.get(), self.sell_or_restock.get()))
+        self.confirm_sell_button = tk.Button(self.sell_restock_frame, text="Confirm", command=lambda: self.sell_restock(self.sell_num_entry.get(), self.selected_product.get(), self.sell_or_restock.get()))
 
         self.sell_radiobutton.grid(row=0, column=0)
         self.restock_radiobutton.grid(row=1, column=0)
@@ -112,9 +112,10 @@ class StoreGUI:
 
         self.buy_production_label = tk.Label(self.production_frame, text="Buy ")
         self.production_num_entry = tk.Entry(self.production_frame)
+        self.production_num_entry.bind("<KeyRelease>", self.update_production_label)
         self.per_s_label = tk.Label(self.production_frame, text="/s production of ")
-        self.production_of_dropdown = tk.OptionMenu(self.production_frame, self.selected_product, "--Choose an option--", *self.product_names)
-        self.confirm_production_button = tk.Button(self.production_frame, text="Confirm (for $X)")
+        self.production_of_dropdown = tk.OptionMenu(self.production_frame, self.selected_product, "--Choose an option--", *self.product_names, command=self.update_production_label)
+        self.confirm_production_button = tk.Button(self.production_frame, text="Confirm", command=lambda: self.buy_production(self.selected_product.get(), self.production_num_entry.get()))
 
         self.buy_production_label.grid(row=0, column=0)
         self.production_num_entry.grid(row=0, column=1)
@@ -138,11 +139,11 @@ class StoreGUI:
             
             if frame == self.sell_restock_frame:
                 self.sell_of_dropdown.destroy()
-                self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, *self.product_names)
+                self.sell_of_dropdown = tk.OptionMenu(self.sell_restock_frame, self.selected_product, *self.product_names, command=self.update_profit_label)
                 self.sell_of_dropdown.grid(row=0, column=3, rowspan=2)
             if frame == self.production_frame:
                 self.production_of_dropdown.destroy()
-                self.production_of_dropdown = tk.OptionMenu(self.production_frame, self.selected_product, *self.product_names)
+                self.production_of_dropdown = tk.OptionMenu(self.production_frame, self.selected_product, *self.product_names, command=self.update_production_label)
                 self.production_of_dropdown.grid(row=0, column=3)
         else:
             messagebox.showerror(title="No Products", message="Please create your first product")
@@ -236,6 +237,7 @@ class StoreGUI:
                         new_product.stock = int(product_data[2])
                         new_product.total_sold = int(product_data[3])
                         new_product.profit_margin = float(product_data[4])
+                        new_product.production = int(product_data[5])
                         self.products.append(new_product)
                 except ValueError:
                     messagebox.showerror(title="Save Error", message="File corrupted")
@@ -286,6 +288,25 @@ class StoreGUI:
         else:
             self.confirm_sell_button.configure(text=f"Confirm")
 
+    def update_production_label(self, arb):
+        """Update the profit label."""
+        displayed_product = self.identify_product(self.selected_product.get())
+        amount = self.production_num_entry.get()
+
+        if int_validation("", False, amount):
+            sale_amount = displayed_product.base_price * 10000
+            self.confirm_production_button.configure(text=f"Confirm (for ${sale_amount})")
+        else:
+            self.confirm_production_button.configure(text=f"Confirm")
+    
+    def buy_production(self, product_name: str, num: str):
+        product = self.identify_product(product_name)
+        if int_validation("", False, num):
+            if self.money - product.base_price * 10000 > 0:
+                product.production += int(num)
+                self.money -= product.base_price * 10000
+            else:
+                messagebox.showerror(title="No Money", message="You do not have enough money")
 
 
 def int_validation(error_text: str, display_error: bool, value):
