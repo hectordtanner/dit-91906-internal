@@ -4,8 +4,8 @@ import tkinter as tk
 from tkinter import messagebox
 
 DEFAULT_PROFIT_MARGIN = 1.2
-STARTING_MONEY = 1100
-PRODUCT_CREATION_PRICE = 1000
+STARTING_MONEY = 110000
+PRODUCT_CREATION_PRICE = 500
 PRODUCTION_PRICE = 10000
 STOCK_WARNING_LEVEL = 10
 TICK_TIME = 1000
@@ -250,7 +250,7 @@ class StoreGUI:
                         new_product.production = int(product_data[5])
                         new_product.recent_purchases = float(product_data[6])
                         self.products.append(new_product)
-                except ValueError:
+                except ValueError, IndexError:
                     messagebox.showerror(title="Save Error", message="File corrupted")
 
             except FileNotFoundError:
@@ -309,7 +309,7 @@ class StoreGUI:
         amount = self.production_num_entry.get()
 
         if int_validation("", False, amount):
-            sale_amount = displayed_product.base_price * PRODUCTION_PRICE
+            sale_amount = displayed_product.base_price * PRODUCTION_PRICE * int(amount)
             self.confirm_production_button.configure(text=f"Confirm (for ${round(sale_amount, 2)})")
         else:
             self.confirm_production_button.configure(text=f"Confirm")
@@ -317,12 +317,15 @@ class StoreGUI:
     def buy_production(self, product_name: str, num: str):
         """Purchase num production for product_name by incrementing the production instance variable."""
         product = self.identify_product(product_name)
-        if int_validation("", False, num):
-            if self.money - product.base_price * PRODUCTION_PRICE > 0:
-                product.production += int(num)
-                self.money -= round(product.base_price * PRODUCTION_PRICE, 2)
-            else:
-                messagebox.showerror(title="No Money", message="You do not have enough money")
+        if int_validation("Please enter a valid price", True, num):
+            if int(num) > 0:
+                if self.money - product.base_price * PRODUCTION_PRICE > 0:
+                    product.production += int(num)
+                    self.money -= round(product.base_price * PRODUCTION_PRICE, 2)
+                else:
+                    messagebox.showerror(title="No Money", message="You do not have enough money")
+            else: 
+                messagebox.showerror(title="Invalid Price", message="Please enter a valid price")
 
 
 def int_validation(error_text: str, display_error: bool, value):
