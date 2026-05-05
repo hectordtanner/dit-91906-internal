@@ -4,10 +4,14 @@ import tkinter as tk
 from tkinter import messagebox
 
 DEFAULT_PROFIT_MARGIN = 1.2
-STARTING_MONEY = 13100
+STARTING_MONEY = 1100
 PRODUCT_CREATION_PRICE = 1000
+PRODUCTION_PRICE = 10000
 STOCK_WARNING_LEVEL = 10
 TICK_TIME = 1000
+RECENT_PURCHASE_FACTOR = 0.1
+RECENT_PURCHASE_CONST = 0.1
+PROFIT_MARGIN_FACTOR = 0.01
 
 class Product:
     """Store the information of a single product."""
@@ -19,9 +23,10 @@ class Product:
         self.total_sold = 0
         self.profit_margin = DEFAULT_PROFIT_MARGIN
         self.production = 0
+        self.recent_purchases = 0.0
     
     def save_file_str(self):
-        return f"{self.name}|{self.base_price}|{self.stock}|{self.total_sold}|{self.profit_margin}|{self.production}"
+        return f"{self.name}|{self.base_price}|{self.stock}|{self.total_sold}|{self.profit_margin}|{self.production}|{self.recent_purchases}"
 
 class StoreGUI:
     """Create and display program GUI."""
@@ -153,20 +158,22 @@ class StoreGUI:
         if len(product_name.strip()) >= 3:
             if not ("|" in product_name or "\n" in product_name):
                 if not (product_name.strip() in self.product_names):
-                    can_int = int_validation("Please enter a valid price", True, price)
-                    if can_int:
-                        if self.money >= PRODUCT_CREATION_PRICE:
-                            self.products.append(Product(product_name, int(price)))
-                            self.product_names.append(product_name)
-                            self.product_name_entry.delete(0, tk.END)
-                            self.base_price_entry.delete(0, tk.END)
-                            self.product_name_entry.focus()
-                            self.money -= PRODUCT_CREATION_PRICE
+                        if int_validation("Please enter a valid price", True, price):
+                            if int(price) > 0:
+                                if self.money >= PRODUCT_CREATION_PRICE:
+                                    self.products.append(Product(product_name, int(price)))
+                                    self.product_names.append(product_name)
+                                    self.product_name_entry.delete(0, tk.END)
+                                    self.base_price_entry.delete(0, tk.END)
+                                    self.product_name_entry.focus()
+                                    self.money -= round(PRODUCT_CREATION_PRICE, 2)
+                                else:
+                                    messagebox.showerror(title="No Money", message="You do not have enough money")
+                            else:
+                                messagebox.showerror(title="Invalid Price", message= "Please enter a valid price")
                         else:
-                            messagebox.showerror(title="No Money", message="You do not have enough money")
-                    else:
-                        self.base_price_entry.delete(0, tk.END)
-                        self.base_price_entry.focus()
+                            self.base_price_entry.delete(0, tk.END)
+                            self.base_price_entry.focus()
                 else:
                     messagebox.showerror(title="Invalid Name", message="Product name already exists")
                     self.product_name_entry.delete(0, tk.END)
@@ -195,13 +202,14 @@ class StoreGUI:
                         selling_product.stock -= int(amount)
                         selling_product.total_sold += int(amount)
                         self.total_sales += int(amount)
-                        self.money += int(amount) * selling_product.base_price * selling_product.profit_margin
+                        self.money += round(int(amount) * selling_product.base_price * selling_product.profit_margin, 2)
+                        selling_product.recent_purchases += int(amount)
                     else:
                         messagebox.showerror(title="No Stock", message=f"You do not have {amount} of {product_name}")   
   
                 else:
                     if self.money - (int(amount) * selling_product.base_price) >= 0:
-                        self.money -= int(amount) * selling_product.base_price
+                        self.money -= round(int(amount) * selling_product.base_price, 2)
                         selling_product.stock += int(amount)
                     else:
                         messagebox.showerror(title="No Money", message="You do not have enough money")
@@ -224,7 +232,7 @@ class StoreGUI:
                 try:
                     with open("save_files/" + save, "r") as save_file:
                         save_data = save_file.read().splitlines()
-                    self.money = float(save_data[0].split("|")[0])
+                    self.money = round(float(save_data[0].split("|")[0]), 2)
                     self.total_sales = int(save_data[0].split("|")[1])
                     save_data.pop(0)
 
@@ -236,8 +244,9 @@ class StoreGUI:
                         new_product = Product(product_data[0], int(product_data[1]))
                         new_product.stock = int(product_data[2])
                         new_product.total_sold = int(product_data[3])
-                        new_product.profit_margin = float(product_data[4])
+                        new_product.profit_margin = round(float(product_data[4]), 3)
                         new_product.production = int(product_data[5])
+                        new_product.recent_purchases = float(product_data[6])
                         self.products.append(new_product)
                 except ValueError:
                     messagebox.showerror(title="Save Error", message="File corrupted")
@@ -256,9 +265,13 @@ class StoreGUI:
                 save_file.write(full_save_str)
         
     def tick_update(self):
-        self.update_stock_level()
+        """Runs game ticks with .after"""
         for product in self.products:
             product.stock += product.production
+            product.recent_purchases = round(product.recent_purchases - abs(product.recent_purchases * RECENT_PURCHASE_FACTOR) - RECENT_PURCHASE_CONST, 3)
+            product.profit_margin -= round(product.recent_purchases * PROFIT_MARGIN_FACTOR, 3)
+        self.update_profit_label(0)
+        self.update_stock_level()
         root.after(TICK_TIME, self.tick_update)
     
     def update_stock_level(self):
@@ -284,7 +297,7 @@ class StoreGUI:
                 sale_amount = int(amount) * displayed_product.base_price * displayed_product.profit_margin
             else:
                 sale_amount = int(amount) * displayed_product.base_price
-            self.confirm_sell_button.configure(text=f"Confirm (for ${sale_amount})")
+            self.confirm_sell_button.configure(text=f"Confirm (for ${round(sale_amount, 2)})")
         else:
             self.confirm_sell_button.configure(text=f"Confirm")
 
@@ -294,17 +307,18 @@ class StoreGUI:
         amount = self.production_num_entry.get()
 
         if int_validation("", False, amount):
-            sale_amount = displayed_product.base_price * 10000
-            self.confirm_production_button.configure(text=f"Confirm (for ${sale_amount})")
+            sale_amount = displayed_product.base_price * PRODUCTION_PRICE
+            self.confirm_production_button.configure(text=f"Confirm (for ${round(sale_amount, 2)})")
         else:
             self.confirm_production_button.configure(text=f"Confirm")
     
     def buy_production(self, product_name: str, num: str):
+        """Purchase production"""
         product = self.identify_product(product_name)
         if int_validation("", False, num):
-            if self.money - product.base_price * 10000 > 0:
+            if self.money - product.base_price * PRODUCTION_PRICE > 0:
                 product.production += int(num)
-                self.money -= product.base_price * 10000
+                self.money -= round(product.base_price * PRODUCTION_PRICE, 2)
             else:
                 messagebox.showerror(title="No Money", message="You do not have enough money")
 
@@ -324,5 +338,6 @@ def int_validation(error_text: str, display_error: bool, value):
 if __name__ == "__main__":
     root = tk.Tk()
     store_gui = StoreGUI(root)
+    root.focus_force()
     store_gui.tick_update()
     root.mainloop()
