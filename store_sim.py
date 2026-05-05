@@ -13,6 +13,7 @@ RECENT_PURCHASE_FACTOR = 0.1
 RECENT_PURCHASE_CONST = 0.1
 PROFIT_MARGIN_FACTOR = 0.01
 
+
 class Product:
     """Store the information of a single product."""
     def __init__(self, name: str, base_price: int):
@@ -27,6 +28,7 @@ class Product:
     
     def save_file_str(self):
         return f"{self.name}|{self.base_price}|{self.stock}|{self.total_sold}|{self.profit_margin}|{self.production}|{self.recent_purchases}"
+
 
 class StoreGUI:
     """Create and display program GUI."""
@@ -154,7 +156,7 @@ class StoreGUI:
             messagebox.showerror(title="No Products", message="Please create your first product")
 
     def create_product(self, product_name: str, price: str):
-        """Create a new product."""
+        """Create a new object of the Product class, with the specified data."""
         if len(product_name.strip()) >= 3:
             if not ("|" in product_name or "\n" in product_name):
                 if not (product_name.strip() in self.product_names):
@@ -188,7 +190,7 @@ class StoreGUI:
             self.product_name_entry.focus()
 
     def sell_restock(self, amount: str, product_name: str, is_selling: bool):
-        """Sell and restock products."""
+        """Sell and restock amount of the specified product, using is_selling to differentiate selling and restocking."""
         can_int = int_validation("Please enter a valid amount", True, amount)
 
         if can_int:
@@ -205,7 +207,7 @@ class StoreGUI:
                         self.money += round(int(amount) * selling_product.base_price * selling_product.profit_margin, 2)
                         selling_product.recent_purchases += int(amount)
                     else:
-                        messagebox.showerror(title="No Stock", message=f"You do not have {amount} of {product_name}")   
+                        messagebox.showerror(title="No Stock", message=f"You do not have {amount} of {product_name}")
   
                 else:
                     if self.money - (int(amount) * selling_product.base_price) >= 0:
@@ -226,7 +228,7 @@ class StoreGUI:
         return identified_product
 
     def load_save(self, save: str):
-        """Load an external save file from a specified file in the save_files folder."""
+        """Load an external save file from a specified file in the save_files folder, with open("r")."""
         if messagebox.askokcancel(title="Load Save", message="Are you sure you want to load this save? It will delete the save currently open if it has not been saved"):
             try:
                 try:
@@ -255,7 +257,7 @@ class StoreGUI:
                 messagebox.showerror(title="Save Error", message="File does not exist.")
 
     def overwrite_save(self, save: str):
-        """Overwrite an external save file from a specified file in the save_files folder."""
+        """Overwrite an external save file from a specified file in the save_files folder, with open("w")."""
         if messagebox.askokcancel(title="Overwrite Save", message="Are you sure you want to overwrite this save? It will delete the save currently stored there."):
             full_save_str = f"{self.money}|{self.total_sales}"
             for product in self.products:
@@ -263,9 +265,9 @@ class StoreGUI:
 
             with open("save_files/" + save, "w") as save_file:
                 save_file.write(full_save_str)
-        
+
     def tick_update(self):
-        """Runs game ticks with .after"""
+        """Runs game ticks with .after, updating profit_margin and recent_purchases for each product to creat supply and demand."""
         for product in self.products:
             product.stock += product.production
             product.recent_purchases = round(product.recent_purchases - abs(product.recent_purchases * RECENT_PURCHASE_FACTOR) - RECENT_PURCHASE_CONST, 3)
@@ -275,7 +277,7 @@ class StoreGUI:
         root.after(TICK_TIME, self.tick_update)
     
     def update_stock_level(self):
-        """Update the stock level labels"""
+        """Update the stock level labels to display how many of each product the user has, and which have low stock."""
         stock_label_str = ""
         warning_label_str = ""
         for product in self.products:
@@ -288,7 +290,7 @@ class StoreGUI:
         self.total_sales_label.configure(text=f"Total Sales: {self.total_sales}")
     
     def update_profit_label(self, arb):
-        """Update the profit label."""
+        """Update the profit label to display the amount made or lost by selling or buying product."""
         displayed_product = self.identify_product(self.selected_product.get())
         amount = self.sell_num_entry.get()
 
@@ -302,7 +304,7 @@ class StoreGUI:
             self.confirm_sell_button.configure(text=f"Confirm")
 
     def update_production_label(self, arb):
-        """Update the profit label."""
+        """Update the production label to show the cost to buy the production."""
         displayed_product = self.identify_product(self.selected_product.get())
         amount = self.production_num_entry.get()
 
@@ -311,9 +313,9 @@ class StoreGUI:
             self.confirm_production_button.configure(text=f"Confirm (for ${round(sale_amount, 2)})")
         else:
             self.confirm_production_button.configure(text=f"Confirm")
-    
+
     def buy_production(self, product_name: str, num: str):
-        """Purchase production"""
+        """Purchase num production for product_name by incrementing the production instance variable."""
         product = self.identify_product(product_name)
         if int_validation("", False, num):
             if self.money - product.base_price * PRODUCTION_PRICE > 0:
